@@ -12,8 +12,8 @@ import os.path
 import scipy 
 import cloudpickle as pickle
 from struct import unpack
+import brian2 as b
 from brian2 import *
-
 
 #------------------------------------------------------------------------------ 
 # functions
@@ -27,11 +27,11 @@ def get_labeled_data(picklename, bTrain = True):
     else:
         # open gzip images in read binary mode
         if bTrain:
-            images = open(MNIST_data_path + 'train-images-idx3-ubyte', 'rb', encoding='binary')
-            labels = open(MNIST_data_path + 'train-labels-idx1-ubyte', 'rb', encoding='binary')
+            images = open(MNIST_data_path + 'train-images-idx3-ubyte', 'rb')
+            labels = open(MNIST_data_path + 'train-labels-idx1-ubyte', 'rb')
         else:
-            images = open(MNIST_data_path + 't10k-images-idx3-ubyte', 'rb', encoding='binary')
-            labels = open(MNIST_data_path + 't10k-labels-idx1-ubyte', 'rb', encoding='binary')
+            images = open(MNIST_data_path + 't10k-images-idx3-ubyte', 'rb')
+            labels = open(MNIST_data_path + 't10k-labels-idx1-ubyte', 'rb')
         # get metadata for images
         images.read(4) #skip magic number
         number_of_images = unpack('>I', images.read(4))[0]
@@ -89,8 +89,8 @@ end_time_training = int(training_ending)
 start_time_testing = 0
 end_time_testing = int(testing_ending)
 
-n_e = 400
-n_input = 784
+n_e = 400 # Number of excitatory neurons
+n_input = 784 # Number of input neurons
 ending = ''
 
 print('Load MNIST\n')
@@ -104,6 +104,7 @@ testing_result_monitor = np.load(data_path + 'resultPopVecs' + testing_ending + 
 testing_input_numbers = np.load(data_path + 'inputNumbers' + testing_ending + '.npy')
 print(training_result_monitor.shape)
 print('')
+
 print('Get assignments\n')
 test_results = np.zeros((10, end_time_testing-start_time_testing))
 test_results_max = np.zeros((10, end_time_testing-start_time_testing))
@@ -111,6 +112,7 @@ test_results_top = np.zeros((10, end_time_testing-start_time_testing))
 test_results_fixed = np.zeros((10, end_time_testing-start_time_testing))
 assignments = get_new_assignments(training_result_monitor[start_time_training:end_time_training], training_input_numbers[start_time_training:end_time_training])
 print(assignments)
+
 counter = 0 
 num_tests = end_time_testing / 10000
 my_list = [0]
@@ -120,15 +122,16 @@ while (counter < num_tests):
     end_time = min(end_time_testing, 10000*(counter+1))
     start_time = 10000*counter
     test_results = np.zeros((10, end_time-start_time))
-    print('\nCalculate accuracy for sum:')
+    print('\nCalculate accuracy of performance:')
     for i in range(end_time - start_time):
         test_results[:,i] = get_recognized_number_ranking(assignments, testing_result_monitor[i+start_time,:])
+    
     difference = test_results[0,:] - testing_input_numbers[start_time:end_time]
     correct = len(np.where(difference == 0)[0])
     incorrect = np.where(difference != 0)[0]
     sum_accuracy[counter] = correct/float(end_time-start_time) * 100
     print('The accuracy is ', sum_accuracy[counter], '%. The number of incorrect readings is ', len(incorrect), ' out of 10000.')
     counter += 1
-print('Sum response - accuracy --> mean: ', np.mean(sum_accuracy),  '--> standard deviation: ', np.std(sum_accuracy))
+#print('Sum response - accuracy --> mean: ', np.mean(sum_accuracy),  '--> standard deviation: ', np.std(sum_accuracy))
 
-show()
+b.show()
