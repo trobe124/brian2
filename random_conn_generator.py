@@ -1,86 +1,96 @@
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2021 Anna Kuhn
+# Copyright (C) 2021 University of Zurich
 '''
 Created on 15.12.2014
-
 @author: Peter U. Diehl
+https://github.com/zxzhijia/Brian2STDPMNIST
 '''
-
-import scipy.ndimage as sp
 import numpy as np
-import pylab
-
-
 def randomDelay(minDelay, maxDelay):
+    """
+    Function to set an optional random delay anywhere
+    """
     return np.random.rand()*(maxDelay-minDelay) + minDelay
-        
-        
 def computePopVector(popArray):
+    """
+    Function to compute Vector Position
+    """
     size = len(popArray)
-    complex_unit_roots = np.array([np.exp(1j*(2*np.pi/size)*cur_pos) for cur_pos in range(size)])
-    cur_pos = (np.angle(np.sum(popArray * complex_unit_roots)) % (2*np.pi)) / (2*np.pi)
+    complex_unit_roots = (np.array([np.exp(1j * (2*np.pi / size) * cur_pos) \
+        for cur_pos in range(size)]))
+    cur_pos = (np.angle(np.sum(popArray * complex_unit_roots)) % (2*np.pi)) \
+        / (2*np.pi)
     return cur_pos
-
-        
 def sparsenMatrix(baseMatrix, pConn):
+    """
+    Function to delete some elements in the matrix with lasting connections of
+    probability pConn
+    """
     weightMatrix = np.zeros(baseMatrix.shape)
     numWeights = 0
     numTargetWeights = baseMatrix.shape[0] * baseMatrix.shape[1] * pConn
     weightList = [0]*int(numTargetWeights)
     while numWeights < numTargetWeights:
-        idx = (np.int32(np.random.rand()*baseMatrix.shape[0]), np.int32(np.random.rand()*baseMatrix.shape[1]))
+        idx = (np.int32(np.random.rand()*baseMatrix.shape[0]), 
+            np.int32(np.random.rand()*baseMatrix.shape[1]))
         if not (weightMatrix[idx]):
             weightMatrix[idx] = baseMatrix[idx]
             weightList[numWeights] = (idx[0], idx[1], baseMatrix[idx])
             numWeights += 1
     return weightMatrix, weightList
-        
-    
 def create_weights():
-    
+    """
+    Function to create weights for all connections and their weightings
+    """
     nInput = 784
     nE = 400
     nI = nE 
-    dataPath = '/Users/TyTheWiseGuy/brian2/Brian2STDPMNIST/weights/random'
+    dataPath = '/Users/TyTheWiseGuy/brian2/Brian2STDPMNIST/random/'
     weight = {}
-    weight['ee_input'] = 0.3 
-    weight['ei_input'] = 0.2 
+    weight['ee_input'] = 0.3
+    weight['ei_input'] = 0.2
     weight['ee'] = 0.1
     weight['ei'] = 10.4
     weight['ie'] = 17.0
     weight['ii'] = 0.4
     pConn = {}
-    pConn['ee_input'] = 1.0 
-    pConn['ei_input'] = 0.1 
+    pConn['ee_input'] = 1.0
+    pConn['ei_input'] = 0.1
     pConn['ee'] = 1.0
     pConn['ei'] = 0.0025
     pConn['ie'] = 0.9
     pConn['ii'] = 0.1
     
     
-    print('Create random connection matrices')
+    print('create connection matrices from X->E')
     connNameList = ['XeAe']
     for name in connNameList:
         weightMatrix = np.random.random((nInput, nE)) + 0.01
         weightMatrix *= weight['ee_input']
         if pConn['ee_input'] < 1.0:
-            weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ee_input'])
+            weightMatrix, weightList = sparsenMatrix(weightMatrix, 
+                pConn['ee_input'])
         else:
-            weightList = [(i, j, weightMatrix[i,j]) for j in range(nE) for i in range(nInput)]
+            weightList = [(i, j, weightMatrix[i,j]) for j in range(nE) 
+                for i in range(nInput)]
+        print('save connection matrix', name)
         np.save(dataPath+name, weightList)
     
     
     
-    print('create connection matrices from E->I which are purely random')
-    connNameList = ['XeAi']
+    print('create connection matrices from E->E which are purely random')
+    connNameList = ['AeAe']
     for name in connNameList:
-        weightMatrix = np.random.random((nInput, nI))
-        weightMatrix *= weight['ei_input']
-        weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ei_input'])
+        weightMatrix = np.random.random((nE, nE))
+        weightMatrix *= weight['ee']
+        weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ee'])
         print('save connection matrix', name)
         np.save(dataPath+name, weightList)
         
     
     
-    print('Create connection matrices from E->I which are purely random')
+    print('create connection matrices from E->I which are purely random')
     connNameList = ['AeAi']
     for name in connNameList:
         if nE == nI:
@@ -88,13 +98,14 @@ def create_weights():
         else:
             weightMatrix = np.random.random((nE, nI))
             weightMatrix *= weight['ei']
-            weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ei'])
-        print('Save connection matrix', name)
+            weightMatrix, weightList = sparsenMatrix(weightMatrix, 
+                pConn['ei'])
+        print('save connection matrix', name)
         np.save(dataPath+name, weightList)
         
         
         
-    print ('Create connection matrices from I->E which are purely random')
+    print('create connection matrices from I->E which are purely random')
     connNameList = ['AiAe']
     for name in connNameList:
         if nE == nI:
@@ -102,25 +113,16 @@ def create_weights():
             weightMatrix *= weight['ie']
             for i in range(nI):
                 weightMatrix[i,i] = 0
-            weightList = [(i, j, weightMatrix[i,j]) for i in range(nI) for j in range(nE)]
+            weightList = [(i, j, weightMatrix[i,j]) for i in range(nI) 
+                for j in range(nE)]
         else:
             weightMatrix = np.random.random((nI, nE))
             weightMatrix *= weight['ie']
-            weightMatrix, weightList = sparsenMatrix(weightMatrix, pConn['ie'])
-        print('Save connection matrix', name)
+            weightMatrix, weightList = sparsenMatrix(weightMatrix, 
+                pConn['ie'])
+        print('save connection matrix', name)
         np.save(dataPath+name, weightList)
     
          
 if __name__ == "__main__":
     create_weights()
-    
-
-
-
-
-
-
-
-
-
-
